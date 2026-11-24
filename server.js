@@ -121,5 +121,5 @@ for every student.
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-console.log(StudySpot AI running on port ${PORT}); 
+console.log(`StudySpot AI running on port ${PORT}`);
 });
