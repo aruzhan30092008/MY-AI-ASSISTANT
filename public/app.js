@@ -18,21 +18,29 @@ function addMessage(text, type) {
   return message;
 }
 
-// Жаңа чат ашу
-newChat.addEventListener("click", () => {
-  messages = [];
-
+// Welcome screen
+function showWelcome() {
   chat.innerHTML = `
     <div class="welcome">
       <div class="logo">✦</div>
       <h1>Сәлем! 👋</h1>
-      <p>Мен сенің AI көмекшіңмін.
-      Маған кез келген сұрағыңды қоя аласың.</p>
+      <p>
+        Мен StudySpot AI көмекшісімін.
+        Аудитория, кітапхана және оқу орындарын
+        брондау туралы сұрақтарыңды қоя аласың.
+      </p>
     </div>
   `;
+}
+
+// New chat
+newChat.addEventListener("click", () => {
+  messages = [];
+  showWelcome();
+  input.focus();
 });
 
-// Хабарлама жіберу
+// Send message
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -55,18 +63,16 @@ form.addEventListener("submit", async (event) => {
   sendBtn.disabled = true;
 
   const loading = addMessage(
-    "Жауап дайындалып жатыр...",
+    "StudySpot AI жауап дайындап жатыр...",
     "assistant"
   );
 
   try {
     const response = await fetch("/chat", {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         messages: messages
       })
@@ -75,7 +81,7 @@ form.addEventListener("submit", async (event) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Сервер қатесі");
+      throw new Error(data.error || "Server error");
     }
 
     loading.textContent = data.answer;
@@ -85,9 +91,15 @@ form.addEventListener("submit", async (event) => {
       content: data.answer
     });
 
+    messages = messages.slice(-12);
+
   } catch (error) {
-    loading.textContent = "Қате: " + error.message;
+    loading.textContent =
+      "Кешіріңіз, қате пайда болды. Қайтадан көріңіз.";
+
     messages.pop();
+
+    console.error("StudySpot AI:", error);
 
   } finally {
     sendBtn.disabled = false;
@@ -95,7 +107,7 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-// Enter арқылы хабарлама жіберу
+// Enter to send
 input.addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
