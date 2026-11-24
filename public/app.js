@@ -4,8 +4,26 @@ const input = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const newChat = document.getElementById("newChat");
 
+// Сұхбат тарихы
 let messages = [];
+let isSending = false;
 
+// Welcome screen
+function showWelcome() {
+  chat.innerHTML = `
+    <div class="welcome">
+      <div class="logo">✦</div>
+      <h1>Welcome to StudySpot! 👋</h1>
+      <p>
+        Мен StudySpot AI көмекшісімін.
+        Аудитория, кітапхана және оқу орындарын
+        брондау туралы кез келген сұрағыңды қоя аласың.
+      </p>
+    </div>
+  `;
+}
+
+// Хабарламаны экранға шығару
 function addMessage(text, type) {
   const message = document.createElement("div");
 
@@ -13,66 +31,47 @@ function addMessage(text, type) {
   message.textContent = text;
 
   chat.appendChild(message);
+
   chat.scrollTop = chat.scrollHeight;
 
   return message;
 }
 
-// Welcome screen
-function showWelcome() {
-  chat.innerHTML = `
-    <div class="welcome">
-      <div class="logo">✦</div>
-      <h1>Сәлем! 👋</h1>
-      <p>
-        Мен StudySpot AI көмекшісімін.
-        Аудитория, кітапхана және оқу орындарын
-        брондау туралы сұрақтарыңды қоя аласың.
-      </p>
-    </div>
-  `;
+// Жаңа чат бастау
+if (newChat) {
+  newChat.addEventListener("click", () => {
+    if (isSending) return;
+
+    messages = [];
+    showWelcome();
+    input.focus();
+  });
 }
 
-// New chat
-newChat.addEventListener("click", () => {
-  messages = [];
-  showWelcome();
-  input.focus();
-});
-
-// Send message
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const question = input.value.trim();
-
-  if (!question || sendBtn.disabled) return;
-
-  const welcome = chat.querySelector(".welcome");
-
-  if (welcome) welcome.remove();
-
+// AI серверіне сұрақ жіберу
+async function sendToAI(question) {
   messages.push({
     role: "user",
     content: question
   });
 
-  addMessage(question, "user");
-
-  input.value = "";
+  isSending = true;
   sendBtn.disabled = true;
+  input.disabled = true;
 
   const loading = addMessage(
-    "StudySpot AI жауап дайындап жатыр...",
+    "✦ StudySpot AI жауап дайындап жатыр...",
     "assistant"
   );
 
   try {
     const response = await fetch("/chat", {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify({
         messages: messages
       })
@@ -81,36 +80,89 @@ form.addEventListener("submit", async (event) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Server error");
+      throw new Error(
+        data.error || "Серверде қате пайда болды."
+      );
     }
 
+    if (!data.answer) {
+      throw new Error("AI бос жауап қайтарды.");
+    }
+
+    // AI жауабын көрсету
     loading.textContent = data.answer;
 
+    // Сұхбат тарихына қосу
     messages.push({
       role: "assistant",
       content: data.answer
     });
 
+    // Соңғы 12 хабарламаны сақтау
     messages = messages.slice(-12);
 
   } catch (error) {
-    loading.textContent =
-      "Кешіріңіз, қате пайда болды. Қайтадан көріңіз.";
+    console.error("StudySpot AI Error:", error);
 
+    loading.textContent =
+      "Кешіріңіз, AI уақытша жауап бере алмай тұр. " +
+      "Интернетті тексеріп, қайта көріңіз.";
+
+    // Сәтсіз сұрақты тарихтан алып тастау
     messages.pop();
 
-    console.error("StudySpot AI:", error);
-
   } finally {
+    isSending = false;
     sendBtn.disabled = false;
+    input.disabled = false;
     input.focus();
-  }
-});
 
-// Enter to send
-input.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    form.requestSubmit();
+    chat.scrollTop = chat.scrollHeight;
   }
-});
+}
+
+// Қолданушы хабарламасын жіберу
+if (form) {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const question = input.value.trim();
+
+    if (!question || isSending) return;
+
+    // Welcome бөлімін жасыру
+    const welcome = chat.querySelector(".welcome");
+
+    if (welcome) {
+      welcome.remove();
+    }
+
+    // Қолданушы сұрағын көрсету
+    addMessage(question, "user");
+
+    // Input тазалау
+    input.value = "";
+
+    // AI-ға жіберу
+    await sendToAI(question);
+  });
+}
+
+// Enter арқылы хабарлама жіберу
+if (input) {
+  input.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !isSending
+    ) {
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+}
+
+// Бастапқы экран
+showWelcome();
+
+console.log("StudySpot AI chat initialized successfully!");
