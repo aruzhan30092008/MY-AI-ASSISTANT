@@ -1,57 +1,64 @@
 <!DOCTYPE html>
 <html lang="kk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StudySpot AI </title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudySpot AI</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
+
 <body>
 
-  <div class="app">
+<div class="app">
 
+    <!-- Сол жақ панель -->
     <aside class="sidebar">
-      <h2>✦StuduSpot AI</h2>
-      <button id="newChat">+ Жаңа чат</button>
-      <p>Сенің жеке AI көмекшің</p>
+        <h2>✦ StudySpot AI</h2>
+
+        <button id="newChat" type="button">
+            + Жаңа чат
+        </button>
+
+        <p>Сенің жеке AI көмекшің</p>
     </aside>
 
+    <!-- Негізгі чат бөлігі -->
     <main class="main">
-      <header>
-        <h3>StudySpot AI</h3>
-        <span>● Online</span>
-      </header>
 
-      <section class="chat" id="chat">
-        <div class="welcome">
-          <div class="logo">✦</div>
-          <h1>Welcome to StudySpot! 👋</h1>
-<h1>Welcome to StudySpot! 👋</h1>
+        <header>
+            <h3>StudySpot AI</h3>
+            <span>● Online</span>
+        </header>
 
-<p>
-Мен StudySpot AI көмекшісімін.
-Аудитория, кітапхана және оқу орындарын
-брондау туралы кез келген сұрағыңды қоя аласың.
-</p>
- 
-        </div>
-      </section>
+        <!-- Хабарламалар шығатын бөлім -->
+        <section class="chat" id="chat">
+        </section>
 
-      <form id="chatForm">
-        <textarea
-          id="userInput"
-          placeholder="Хабарлама жаз..."
-          rows="1"
-          required
-        ></textarea>
-        <button type="submit" id="sendBtn">↑</button>
-      </form>
+        <!-- Хабарлама жіберу -->
+        <form id="chatForm">
 
-      <small>AI кейде қате жауап беруі мүмкін.</small>
+            <textarea
+                id="userInput"
+                placeholder="Хабарлама жаз..."
+                rows="1"
+                required
+            ></textarea>
+
+            <button type="submit" id="sendBtn">
+                ↑
+            </button>
+
+        </form>
+
+        <small>
+            AI кейде қате жауап беруі мүмкін.
+        </small>
+
     </main>
 
-  </div>
+</div>
 
-  <script src="app.js"></script>
+<script src="/app.js" defer></script>
+
 </body>
 </html>
