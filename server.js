@@ -1,4 +1,4 @@
-import express from "express";
+ import express from "express";
 import OpenAI from "openai";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,15 +9,16 @@ const _dirname = path.dirname(_filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const ai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// API кілті бар болса ғана OpenAI қосылады
+const ai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 app.use(express.json({ limit: "20kb" }));
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// Server health check
+// Сервер жұмысын тексеру
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -25,12 +26,12 @@ app.get("/health", (req, res) => {
   });
 });
 
-// StudySpot AI
+// StudySpot AI чат жүйесі
 app.post("/chat", async (req, res) => {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!ai) {
       return res.status(500).json({
-        error: "AI API key is not configured."
+        error: "OpenAI API key is not configured."
       });
     }
 
@@ -72,7 +73,6 @@ StudySpot helps students find and book:
 - Places for individual and group study
 
 YOUR TASKS:
-
 1. Explain how to use StudySpot.
 2. Help students understand room booking.
 3. Explain how to find a suitable study space.
@@ -83,7 +83,7 @@ YOUR TASKS:
 LANGUAGE:
 - Detect the language of each user message.
 - Reply in the same language.
-- Support Kazakh, Russian, English and other languages.
+- Support Kazakh, Russian and English.
 - Be natural and friendly.
 
 IMPORTANT:
