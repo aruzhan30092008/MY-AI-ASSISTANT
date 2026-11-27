@@ -1,5 +1,4 @@
- import express from "express";
-import OpenAI from "openai";
+import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -9,16 +8,9 @@ const _dirname = path.dirname(_filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// API кілті бар болса ғана OpenAI қосылады
-const ai = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  : null;
-
 app.use(express.json({ limit: "20kb" }));
-
 app.use(express.static(path.join(__dirname, "public")));
 
-// Сервер жұмысын тексеру
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -26,15 +18,83 @@ app.get("/health", (req, res) => {
   });
 });
 
-// StudySpot AI чат жүйесі
-app.post("/chat", async (req, res) => {
-  try {
-    if (!ai) {
-      return res.status(500).json({
-        error: "OpenAI API key is not configured."
-      });
-    }
+// Тегін дайын жауап жүйесі
+function getAnswer(text) {
+  const q = text.toLowerCase().trim();
 
+  // Қазақша, орысша, ағылшынша жауап
+  const isRussian = /[а-яё]/i.test(q) &&
+    !/[әіңғұүқөһ]/i.test(q);
+  const isEnglish = /^[a-z\s?!.,]+$/i.test(q);
+
+  const reply = (kk, ru, en) =>
+    isRussian ? ru : isEnglish ? en : kk;
+
+  if (/сәлем|салем|привет|hello|hi\b/.test(q)) {
+    return reply(
+      "Сәлем! Мен StudySpot көмекшісімін. Кітапхана, оқу орындары және брондау туралы сұрақтарыңа көмектесемін.",
+      "Здравствуйте! Я помощник StudySpot. Я помогу с вопросами о библиотеке, учебных местах и бронировании.",
+      "Hello! I'm StudySpot assistant. I can help with library, study spaces and booking questions."
+    );
+  }
+
+  if (/studyspot|сайт|сервис|платформа/.test(q)) {
+    return reply(
+      "StudySpot — студенттерге оқу орындарын табуға және оқу кеңістіктерін пайдалануға көмектесетін платформа. Сайт арқылы қолжетімді орындар туралы ақпарат алып, брондау тәртібімен танысуға болады.",
+      "StudySpot — платформа, которая помогает студентам находить места для учёбы и знакомиться с системой бронирования.",
+      "StudySpot is a platform that helps students find study spaces and learn how to book them."
+    );
+  }
+
+  if (/брон|book|резерв|заказ.*мест|орын.*сақта/.test(q)) {
+    return reply(
+      "Орын брондау үшін сайттағы брондау бөліміне кіріп, қолжетімді орындарды қарап, қажетті орынды таңдаңыз. Брондаудың аяқталғанын сайттағы растаудан тексеріңіз. Мен нақты бос орындарды көре алмаймын.",
+      "Чтобы забронировать место, откройте раздел бронирования, выберите доступное место и следуйте инструкциям. Я не вижу актуальную базу свободных мест.",
+      "To book a space, open the booking section, select an available space and follow the instructions. I cannot see live availability."
+    );
+  }
+
+  if (/кітапхана|библиотек|library/.test(q)) {
+    return reply(
+      "Кітапхана — студенттерге сабақ оқуға, әдебиеттермен жұмыс істеуге және тыныш оқу ортасын пайдалануға арналған орын. Нақты жұмыс уақытын университеттің ресми ақпаратынан тексеріңіз.",
+      "Библиотека — место для учёбы, работы с учебными материалами и самостоятельной подготовки. Уточняйте часы работы на официальных ресурсах университета.",
+      "A library is a space for studying, accessing learning materials and independent work. Check your university's official resources for opening hours."
+    );
+  }
+
+  if (/оқу орны|оқу зал|study room|classroom|аудитор|study space/.test(q)) {
+    return reply(
+      "StudySpot оқу орындарын табуға көмектеседі. Сайттың тиісті бөлімінен оқу кеңістіктері туралы ақпаратты қараңыз. Нақты орындардың қолжетімділігі туралы ақпаратты брондау бөлімінен тексеріңіз.",
+      "StudySpot помогает находить учебные пространства. Посмотрите информацию в соответствующем разделе сайта. Актуальную доступность уточняйте в разделе бронирования.",
+      "StudySpot helps you find study spaces. Check the relevant section of the website and confirm availability in the booking section."
+    );
+  }
+
+  if (/университет|university|вуз/.test(q)) {
+    return reply(
+      "Университет туралы нақты ақпарат алу үшін оның ресми сайтына немесе студенттерге арналған ақпараттық бөлімдерге жүгініңіз. StudySpot оқу орындарын пайдалану мен брондау туралы көмектеседі.",
+      "Для получения точной информации об университете посетите его официальный сайт. StudySpot помогает с информацией об учебных пространствах и бронировании.",
+      "For accurate university information, visit its official website. StudySpot helps with study spaces and booking information."
+    );
+  }
+
+  if (/көмек|help|помощ|не істей|что ты можешь/.test(q)) {
+    return reply(
+      "Мен StudySpot платформасы, кітапхана, оқу орындары және брондау тәртібі туралы сұрақтарға жауап бере аламын. Сұрағыңызды нақтырақ жазыңыз.",
+      "Я могу помочь с вопросами о StudySpot, библиотеке, учебных пространствах и бронировании. Задайте более конкретный вопрос.",
+      "I can help with StudySpot, libraries, study spaces and booking procedures. Please ask a more specific question."
+    );
+  }
+
+  return reply(
+    "Бұл сұрақ бойынша менде әзірге дайын ақпарат жоқ. Кітапхана, StudySpot платформасы, оқу орындары немесе брондау туралы сұрап көріңіз.",
+    "У меня пока нет готового ответа на этот вопрос. Попробуйте спросить о библиотеке, StudySpot, учебных местах или бронировании.",
+    "I don't have a prepared answer for that yet. Try asking about the library, StudySpot, study spaces or booking."
+  );
+}
+
+app.post("/chat", (req, res) => {
+  try {
     const { messages } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -43,83 +103,32 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    const history = messages.slice(-12);
+    const lastMessage = messages[messages.length - 1];
 
-    const valid = history.every(message =>
-      message &&
-      ["user", "assistant"].includes(message.role) &&
-      typeof message.content === "string" &&
-      message.content.trim().length > 0 &&
-      message.content.length <= 4000
-    );
-
-    if (!valid || history[history.length - 1].role !== "user") {
+    if (
+      !lastMessage ||
+      lastMessage.role !== "user" ||
+      typeof lastMessage.content !== "string" ||
+      !lastMessage.content.trim()
+    ) {
       return res.status(400).json({
         error: "Invalid message format."
       });
     }
 
-    const response = await ai.responses.create({
-      model: "gpt-5.5",
+    const answer = getAnswer(lastMessage.content);
 
-      instructions: `
-You are StudySpot AI, a friendly assistant
-for a student platform called StudySpot.
-
-StudySpot helps students find and book:
-- Study rooms
-- Classrooms
-- Library spaces
-- Places for individual and group study
-
-YOUR TASKS:
-1. Explain how to use StudySpot.
-2. Help students understand room booking.
-3. Explain how to find a suitable study space.
-4. Answer questions about libraries and classrooms.
-5. Help with general study-related questions.
-6. Explain booking steps in simple language.
-
-LANGUAGE:
-- Detect the language of each user message.
-- Reply in the same language.
-- Support Kazakh, Russian and English.
-- Be natural and friendly.
-
-IMPORTANT:
-- Give clear and accurate answers.
-- Never invent available rooms or booking times.
-- Never invent prices, addresses or opening hours.
-- You do not have access to the live booking database.
-- Never say a booking is confirmed.
-- Direct users to the booking page to make reservations.
-- If you do not know something, be honest.
-- Do not pretend to perform actions you cannot perform.
-- Keep answers focused on StudySpot and student needs.
-
-Your goal is to make StudySpot easy and convenient
-for every student.
-      `,
-
-      input: history.map(message => ({
-        role: message.role,
-        content: message.content
-      }))
-    });
-
-    res.json({
-      answer: response.output_text
-    });
+    res.json({ answer });
 
   } catch (error) {
-    console.error("StudySpot AI error:", error);
+    console.error("StudySpot error:", error);
 
     res.status(500).json({
-      error: "AI is temporarily unavailable. Please try again."
+      error: "Something went wrong."
     });
   }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-console.log(`StudySpot AI running on port ${PORT}`);
+  console.log(StudySpot AI running on port ${PORT});
 });
